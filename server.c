@@ -28,24 +28,24 @@ int positions[9][2] = {{2, 0}, {2, 1}, {2, 2}, {1, 0}, {1, 1}, {1, 2}, {0, 0}, {
 
 // client structure
 typedef struct {
-    struct sockaddr_in address;
+    struct sockaddr_in address; // dia chi client
     int sockfd;
     int uid;
     char name[NAME_LEN];
-} client_t;
+} client_t; // dai dien cho client 
 
 typedef struct {
     char board[3][3];
     int gameState;
     int round;
-    int playerTurn;
+    int playerTurn; // turn nguoi choi hien tai
 } game_t;
 
 // room structure
 typedef struct {
-    client_t *player1;
+    client_t *player1; // dai dien cho nguoi choi trong phong
     client_t *player2;
-    unsigned int uid;
+    unsigned int uid; // dinh danh room
     char state[NAME_LEN];
     game_t *game;
 } room_t;
@@ -91,12 +91,13 @@ void *handle_client(void *arg)
 
     client_t *cli = (client_t*)arg;
 
-    // name
+    // nhan ten tu client, danh leaveflag = 1 neu ko hop le
+
     if (recv(cli->sockfd, name, NAME_LEN, 0) <= 0 || strlen(name) < 2 || strlen(name) >= NAME_LEN -1)
     {
-        printf("Enter the name correctly\n");
+        printf("Enter the name incorrectly\n");
         leave_flag = 1;
-    } else {
+    } else { // gui xac nhan ok cho client
         strcpy(cli->name, name);
         sprintf(buffer, "> %s has joined\n", cli->name);
         printf("%s", buffer);
@@ -124,7 +125,7 @@ void *handle_client(void *arg)
                 printf("> client: '%s' has been send '%s' command\n", cli->name, buffer);
                 sscanf(buffer, "%s %i", &command[0], &number);
 
-                if (strcmp(command, "create") == 0)
+                if (strcmp(command, "create") == 0) // them 1 room moi
                 {
                     flag = 0;
                     
@@ -162,10 +163,10 @@ void *handle_client(void *arg)
                     if (flag != 1) {
                         // clients settings
                         room_t *room = (room_t *)malloc(sizeof(room_t));
-                        room->player1 = cli;
+                        room->player1 = cli; // them client lam chu phong
                         room->player2 = 0;
                         room->uid = roomUid;
-                        strcpy(room->state, "waiting for secound player");
+                        strcpy(room->state, "waiting for second player");
 
                         // add room to queue
                         queue_add_room(room);
@@ -175,7 +176,7 @@ void *handle_client(void *arg)
                         roomUid++;
                     }
                 }
-                else if (strcmp(command, "join") == 0)
+                else if (strcmp(command, "join") == 0) // kiem tra tham gia phong da ton tai, thong bao cho client
                 {
                     int researched = 0;
                     int already = 0;
@@ -190,7 +191,7 @@ void *handle_client(void *arg)
                                 already = 1;
 
                                 bzero(buffer, BUFFER_SZ);
-                                sprintf(buffer, "[SERVER] voce ja esta no room de numero: %i\n", rooms[j]->uid);
+                                sprintf(buffer, "[SERVER] You are already in room number: %i\n", rooms[j]->uid);
                                 send_message(buffer, cli->uid);
                                 break;
                             }
@@ -252,7 +253,7 @@ void *handle_client(void *arg)
                         send_message(buffer, cli->uid);
                     }
                 }
-                else if (strcmp(command, "list") == 0)
+                else if (strcmp(command, "list") == 0) // hien thi danh sach phong va trang thai
                 {
                     pthread_mutex_lock(&rooms_mutex);
 
@@ -278,7 +279,7 @@ void *handle_client(void *arg)
 
                     pthread_mutex_unlock(&rooms_mutex);
                 }
-                else if (strcmp(command, "leave") == 0)
+                else if (strcmp(command, "leave") == 0) // xử lý roi phong
                 {
                     int remove_room = 0;
                     int room_number = 0;
@@ -336,7 +337,7 @@ void *handle_client(void *arg)
                         roomUid--;
                     }
                 }
-                else if (strcmp(command, "start") == 0)
+                else if (strcmp(command, "start") == 0) // xu ly bat dau choi
                 {
                     int startgame = 0;
                     room_t *room_game;
@@ -599,14 +600,14 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    char *ip = "127.0.0.1";
+    char *ip = "172.26.16.108";
     int port = atoi(argv[1]);
 
     int option = 1;
     int listenfd = 0, connfd = 0;
     struct sockaddr_in serv_addr;
     struct sockaddr_in cli_addr;
-    pthread_t tid;
+    pthread_t tid; // luu id cua luong
 
     // Socket settings
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -636,7 +637,7 @@ int main(int argc, char **argv)
     flashScreen();
 
     printf("############################################");
-    printf("\n# Tic-Tac-Toe Server running on port: %i #", port);
+    printf("\n# Tic-Tac-Toe - caro 3x3 Server running on port: %i #", port);
     printf("\n############################################\n\n");
 
     while(1) {
@@ -658,7 +659,7 @@ int main(int argc, char **argv)
 
         // add client to queue
         queue_add_client(cli);
-        pthread_create(&tid, NULL, &handle_client, (void*)cli);
+        pthread_create(&tid, NULL, &handle_client, (void*)cli); // moi client 1 luong
 
         // reduce CPU usage
         sleep(1);

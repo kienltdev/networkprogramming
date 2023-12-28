@@ -28,7 +28,7 @@ pthread_t lobby_thread;
 pthread_t recv_msg_thread;
 pthread_t multiplayer_game;
 
-char *ip = "127.0.0.1";
+char *ip = "172.26.16.108";
 int port = 2050;
 
 void catch_ctrl_c_and_exit()
@@ -100,7 +100,7 @@ void *multiplayerGame(void *arg)
     strcpy(playerName1, name);
 
     char board[3][3];
-    int iterator;
+    int iterator; // bien lap qua cac hang cot
     int playedRow, playedColumn;
     int playedPosition;
     int round = 0;
@@ -108,7 +108,7 @@ void *multiplayerGame(void *arg)
     int validPlay = 0;
     int played;
     int numberPlayed;
-    int positions[9][2] = {{2, 0}, {2, 1}, {2, 2}, {1, 0}, {1, 1}, {1, 2}, {0, 0}, {0, 1}, {0, 2}};
+    int positions[9][2] = {{2, 0}, {2, 1}, {2, 2}, {1, 0}, {1, 1}, {1, 2}, {0, 0}, {0, 1}, {0, 2}}; // ánh xạ số nguyên 1-9 sang sang tọa độ hàng và cột bảng 3x3
 
     char errorMessage[255] = {'\x00'};
     char *currentPlayerName;
@@ -133,7 +133,7 @@ void *multiplayerGame(void *arg)
         {
             if (playerTurn == 1)
             {
-                currentPlayerName = (char *)&playerName1;
+                currentPlayerName = (char *)&playerName1; //neu den luot cua nguoi choi 1 - currentPlayerName sẽ trỏ đến tên của người chơi 1 (player1Name).
             } 
             else
             {
@@ -145,7 +145,7 @@ void *multiplayerGame(void *arg)
             printf("\nRound: %d", round);
             printf("\nPlayer: %s\n", currentPlayerName);
 
-            while (validPlay == 0)
+            while (validPlay == 0) // cho server gui turn 1 hay 2
             {
                 bzero(message, BUFFER_SZ);
 
@@ -166,7 +166,7 @@ void *multiplayerGame(void *arg)
                         playedRow = positions[playedPosition - 1][0];
                         playedColumn = positions[playedPosition - 1][1];
 
-
+                        // gui nuoc di den server
                         if (validPlay == 1)
                         {
                             sprintf(message, "play %i\n", playedPosition);
@@ -293,7 +293,7 @@ void *multiplayerGame(void *arg)
     return NULL;
 }
 
-void *lobby(void *arg)
+void *lobby(void *arg) // lap de doc du lieu tu ban phim 
 {
     char buffer[BUFFER_SZ] = {};
 
@@ -330,12 +330,12 @@ void recv_msg_handler()
         if (receive > 0) {
             if (strcmp(message, "ok") == 0)
             {
-                printf("Comandos:\n");
-                printf("\t -list\t\t\t  List all tic-tac-toe rooms\n");
-                printf("\t -create\t\t  Create one tic-tac-toe room\n");
-                printf("\t -join {room number}\t  Join in one tic-tac-toe room\n");
-                printf("\t -leave\t\t\t  Back of the one tic-tac-toe room\n");
-                printf("\t -start\t\t\t  Starts one tic-tac-toe game\n\n");
+                printf("Command:\n");
+                printf("\t -list\t\t\t  List all caro 3x3 rooms\n");
+                printf("\t -create\t\t  Create one caro 3x3 room\n");
+                printf("\t -join {room number}\t  Join in one caro 3x3 room\n");
+                printf("\t -leave\t\t\t  Back of the one caro 3x3 room\n");
+                printf("\t -start\t\t\t  Starts one caro 3x3 game\n\n");
 
                 str_overwrite_stdout();
             }

@@ -1,4 +1,4 @@
-void queue_add_client(client_t *client)
+void queue_add_client(client_t *client) // them 1 client moi vao danh sach
 {
     pthread_mutex_lock(&clients_mutex);
 
@@ -14,7 +14,7 @@ void queue_add_client(client_t *client)
     pthread_mutex_unlock(&clients_mutex);
 }
 
-void queue_remove_client(int uid)
+void queue_remove_client(int uid) // xoa client
 {
     pthread_mutex_lock(&clients_mutex);
 
@@ -32,7 +32,7 @@ void queue_remove_client(int uid)
     pthread_mutex_unlock(&clients_mutex);
 }
 
-void queue_add_room(room_t *room)
+void queue_add_room(room_t *room)  // them room vao
 {
     pthread_mutex_lock(&rooms_mutex);
 
