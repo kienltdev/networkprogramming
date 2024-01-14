@@ -21,7 +21,7 @@
 
 volatile sig_atomic_t flag = 0;
 int sockfd = 0;
-char name[NAME_LEN];
+char name[BUFFER_SZ];
 int player = 1;
 
 pthread_t lobby_thread;
