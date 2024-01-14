@@ -61,12 +61,36 @@ struct Account {
 
 client_t *clients[MAX_CLIENTS];
 room_t *rooms[MAX_ROOMS];
+char formattedString[10000];
 
 pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t rooms_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #include "queueManager.h"
+// ghi log
+void writeToLog(const char *message) {
+    // Mở file log.txt với chế độ append, nếu chưa có thì tạo mới
+    FILE *file = fopen("log.txt", "a");
 
+    if (file == NULL) {
+        printf("Không thể mở hoặc tạo file log.txt\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Lấy thời gian hiện tại
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    // In thời gian vào file
+    fprintf(file, "[%04d-%02d-%02d %02d:%02d:%02d] %s\n",
+            timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
+            timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec, message);
+
+    // Đóng file
+    fclose(file);
+}
 void send_message(char *message, int uid)
 {
     pthread_mutex_lock(&clients_mutex);
@@ -80,6 +104,7 @@ void send_message(char *message, int uid)
                 if (write(clients[i]->sockfd, message, strlen(message)) < 0)
                 {
                     printf("ERROR: write to descriptor failed\n");
+                    writeToLog("ERROR: write to descriptor failed\n");
                     break;
                 }
             }
@@ -141,6 +166,8 @@ int loadFromFile(struct Account *users, int *numUsers, char *filename) {
     }
 }
 
+
+
 void *handle_client(void *arg)
 {
     char buffer[BUFFER_SZ];
@@ -157,14 +184,13 @@ void *handle_client(void *arg)
     if (recv(cli->sockfd, name, NAME_LEN, 0) <= 0 || strlen(name) < 2 || strlen(name) >= NAME_LEN -1)
     {
         printf("Enter the name incorrectly\n");
+        writeToLog("Enter the name incorrectly\n");
         leave_flag = 1;
     } else { // gui xac nhan ok cho client
         strcpy(cli->name, name);
         sprintf(buffer, "> %s has joined\n", cli->name);
-        printf("online users: %d", c);
-        printf("%s", buffer);
-        //
-        bzero(buffer, BUFFER_SZ);
+        printf("online users: %d\n", c);
+        
 
         for (int i = 0; i < c; i++) {
         if (clients[i]) {
@@ -172,6 +198,10 @@ void *handle_client(void *arg)
         }
         
     }
+        printf("%s", buffer);
+        //
+        writeToLog(buffer);
+        bzero(buffer, BUFFER_SZ);
         //
         // bzero(buffer, BUFFER_SZ);
         // sprintf(buffer, "dang nhap thanh cong\n");
@@ -198,6 +228,8 @@ void *handle_client(void *arg)
                 // send_message(buffer, cli->uid);
                 trim_lf(buffer, strlen(buffer));
                 printf("> client: '%s' has been send '%s' command\n", cli->name, buffer);
+                sprintf(formattedString, "> client: '%s' has been send '%s' command\n", cli->name, buffer);
+                writeToLog(formattedString);
                 sscanf(buffer, "%s %i", &command[0], &number);
 
                 if (strcmp(command, "create") == 0) // them 1 room moi
@@ -309,6 +341,9 @@ void *handle_client(void *arg)
                                 strcpy(rooms[i]->state, "waiting start");
                                 bzero(buffer, BUFFER_SZ);
                                 printf("%s entered room number: %i\n", cli->name, number);
+
+                                sprintf(formattedString, "%s entered room number: %i\n", cli->name, number);
+                                writeToLog(formattedString);
                                 sprintf(buffer, "[SERVER] '%s' entered your room\n", cli->name);
                                 send_message(buffer, rooms[i]->player1->uid);
 
@@ -646,7 +681,7 @@ void *handle_client(void *arg)
                                     sprintf(buffer, "turn1\n");
                                     send_message(buffer, rooms[j]->player2->uid);
                                 }
-                                printf("---%d----\n", rooms[j]->game->round);
+                                // printf("---%d----\n", rooms[j]->game->round);
                                 rooms[j]->game->round++;
                             }
                             break;
@@ -661,12 +696,14 @@ void *handle_client(void *arg)
         {
             sprintf(buffer, "%s has left\n", cli->name);
             printf("%s", buffer);
+            writeToLog(buffer);
             // send_message(buffer, cli->uid);
             leave_flag = 1;
         }
         else
         {
             printf("ERROR: -1\n");
+            writeToLog("ERROR: -1\n");
             leave_flag = 1;
         }
 
@@ -691,6 +728,8 @@ int main(int argc, char **argv)
 {
     if (argc != 2) {
         printf("Usage: %s <port>\n", argv[0]);
+        sprintf(formattedString, "Usage: %s <port>\n", argv[0]);
+        writeToLog(formattedString);
         return EXIT_FAILURE;
     }
 

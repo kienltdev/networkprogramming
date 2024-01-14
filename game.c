@@ -178,7 +178,12 @@ void *multiplayerGame(void *arg)
                                 // Người dùng đã nhập một số không nằm trong khoảng 1-9
                                 printf("Invalid input. Please enter a number between 1 and 9.\n");
                             }
-                        } while (playedPosition < 1 || playedPosition > 9);
+                            else if (board[positions[playedPosition - 1][0]][positions[playedPosition - 1][1]] != '-')
+                            {
+                                // Ô đã được đánh, yêu cầu người dùng nhập lại
+                                printf("Position already taken. Please choose another position.\n");
+                            }
+                        } while (playedPosition < 1 || playedPosition > 9 || board[positions[playedPosition - 1][0]][positions[playedPosition - 1][1]] != '-');
 
                         playedRow = positions[playedPosition - 1][0];
                         playedColumn = positions[playedPosition - 1][1];
@@ -274,7 +279,9 @@ void *multiplayerGame(void *arg)
             else if (strcmp(message, "win2\n") == 0)
             {
                 printf("\nPlayer '%s' won!", currentPlayerName);
-            }else if(strcmp(message, "draw\n") == 0){
+            }
+            else if (strcmp(message, "draw\n") == 0)
+            {
                 printf("\nThe game is a draw!");
             }
 
@@ -648,10 +655,13 @@ void game()
         }
 
         showBoard(board, (char *)&errorMessage);
-        if(round >= 9 && gameState == 1){
-             printf("\nThe game is a draw!"); // game hoa
-        } else{
-        printf("\nPlayer '%s' won!", currentPlayerName);
+        if (round >= 9 && gameState == 1)
+        {
+            printf("\nThe game is a draw!"); // game hoa
+        }
+        else
+        {
+            printf("\nPlayer '%s' won!", currentPlayerName);
         }
 
         printf("\nGame over!\n");
@@ -682,48 +692,60 @@ void menu()
 
     signal(SIGINT, catch_ctrl_c_and_exit);
 
-    while (option < 1 || option > 3)
+    while (option < 1 || option > 4)
+{
+    printf("Welcome to the Game");
+    printf("\n1 - Play Locally");
+    printf("\n2 - Play Online");
+    printf("\n3 - About");
+    printf("\n4 - Quit");
+    printf("\nChoose an option and press ENTER: ");
+
+    if (scanf("%d", &option) != 1)
     {
-        printf("Welcome to the Game");
-        printf("\n1 - Play Locally");
-        printf("\n2 - Play Online");
-        printf("\n3 - About");
-        printf("\n4 - Quit");
-        printf("\nChoose an option and press ENTER: ");
+        flashScreen();
+        
+        // Xử lý nếu người dùng không nhập một số nguyên
+        printf("Invalid input. Please enter a valid number.\n");
 
-        scanf("%d", &option);
-
-        switch (option)
-        {
-        case 1:
-            flashScreen();
-            option = 0;
-            game();
-            break;
-        case 2:
-            flashScreen();
-            option = 0;
-            exit(conectGame());
-            break;
-        case 3:
-            flashScreen();
-            option = 0;
-            printf("About the game!\n");
-            break;
-        case 4:
-            flashScreen();
-            option = 0;
-            printf("You exited!\n");
-            exit(0);
-            break;
-        default:
-            flashScreen();
-            option = 0;
-            printf("Invalid option!\n");
-            continue;
-            break;
-        }
+        // Làm sạch bộ đệm đầu vào
+        while (getchar() != '\n')
+            ;
+        
+        option = 0;  // Đặt option về 0 để vòng lặp tiếp tục
+        continue;
     }
+
+    switch (option)
+    {
+    case 1:
+        flashScreen();
+        option = 0;
+        game();
+        break;
+    case 2:
+        flashScreen();
+        option = 0;
+        exit(conectGame());
+        break;
+    case 3:
+        flashScreen();
+        option = 0;
+        printf("About the game!\n");
+        break;
+    case 4:
+        flashScreen();
+        option = 0;
+        printf("You exited!\n");
+        exit(0);
+        break;
+    default:
+        flashScreen();
+        option = 0;
+        printf("Invalid option!\n");
+        break;
+    }
+}
 }
 
 int main(int argc, char **argv)
