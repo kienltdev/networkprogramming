@@ -21,9 +21,12 @@
 #define NAME_LEN 64
 
 static _Atomic unsigned int cli_count = 0; 
+static _Atomic int c = 0; 
 static int uid = 10;
 static int roomUid = 1;
-
+#define MAX_USERS 100
+#define MAX_USERNAME 30
+#define MAX_PASSWORD 30
 int positions[9][2] = {{2, 0}, {2, 1}, {2, 2}, {1, 0}, {1, 1}, {1, 2}, {0, 0}, {0, 1}, {0, 2}};
 
 // client structure
@@ -49,6 +52,12 @@ typedef struct {
     char state[NAME_LEN];
     game_t *game;
 } room_t;
+
+struct Account {
+    char username[MAX_USERNAME];
+    char password[MAX_PASSWORD];
+};
+
 
 client_t *clients[MAX_CLIENTS];
 room_t *rooms[MAX_ROOMS];
@@ -80,6 +89,58 @@ void send_message(char *message, int uid)
     pthread_mutex_unlock(&clients_mutex);
 }
 
+
+// Hàm kiểm tra đăng nhập
+int login(struct Account *users, int numUsers, char *username, char *password) {
+    for (int i = 0; i < numUsers; ++i) {
+        if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0) {
+            return 1; // Đăng nhập thành công
+        }
+    }
+    return 0; // Đăng nhập thất bại
+}
+
+// Hàm đăng ký tài khoản
+int registerAccount(struct Account *users, int *numUsers, char *username, char *password) {
+    if (*numUsers < MAX_USERS) {
+        strcpy(users[*numUsers].username, username);
+        strcpy(users[*numUsers].password, password);
+        (*numUsers)++;
+        return 1; // Đăng ký thành công
+    } else {
+        return 0; // Đã đạt tới số lượng tài khoản tối đa
+    }
+}
+
+// Hàm lưu thông tin tài khoản vào file
+void saveToFile(struct Account *users, int numUsers, char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file != NULL) {
+        for (int i = 0; i < numUsers; ++i) {
+            fprintf(file, "%s %s\n", users[i].username, users[i].password);
+        }
+        fclose(file);
+    }
+}
+
+// Hàm đọc thông tin tài khoản từ file
+int loadFromFile(struct Account *users, int *numUsers, char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file != NULL) {
+        *numUsers = 0;
+        while (fscanf(file, "%s %s", users[*numUsers].username, users[*numUsers].password) == 2) {
+            (*numUsers)++;
+            if (*numUsers >= MAX_USERS) {
+                break; // Đã đọc đủ số lượng tài khoản tối đa
+            }
+        }
+        fclose(file);
+        return 1; // Đọc file thành công
+    } else {
+        return 0; // Lỗi khi mở file
+    }
+}
+
 void *handle_client(void *arg)
 {
     char buffer[BUFFER_SZ];
@@ -100,8 +161,22 @@ void *handle_client(void *arg)
     } else { // gui xac nhan ok cho client
         strcpy(cli->name, name);
         sprintf(buffer, "> %s has joined\n", cli->name);
+        printf("online users: %d", c);
         printf("%s", buffer);
+        //
+        bzero(buffer, BUFFER_SZ);
 
+        for (int i = 0; i < c; i++) {
+        if (clients[i]) {
+            printf("- %s\n", clients[i]->name);
+        }
+        
+    }
+        //
+        // bzero(buffer, BUFFER_SZ);
+        // sprintf(buffer, "dang nhap thanh cong\n");
+        // send_message(buffer, cli->uid);
+        //
         bzero(buffer, BUFFER_SZ);
         sprintf(buffer, "ok");
         send_message(buffer, cli->uid);
@@ -497,7 +572,6 @@ void *handle_client(void *arg)
                                 if (rooms[j]->game->gameState == 0)
                                 {
                                     strcpy(rooms[j]->state, "waiting start");
-
                                     if (rooms[j]->game->playerTurn == rooms[j]->player1->uid)
                                     {
                                         bzero(buffer, BUFFER_SZ);
@@ -527,7 +601,26 @@ void *handle_client(void *arg)
 
                                     send_message(buffer, rooms[j]->player2->uid);
                                     break;
+                                }else if (rooms[j]->game->gameState == 1 && rooms[j]->game->round >= 8)
+                                {
+                                   strcpy(rooms[j]->state, "waiting start");
+                                    bzero(buffer, BUFFER_SZ);
+                                        sprintf(buffer, "draw\n");
+                                        send_message(buffer, rooms[j]->player1->uid);
+
+                                        sleep(0.5);
+
+                                        send_message(buffer, rooms[j]->player2->uid);
+                                        bzero(buffer, BUFFER_SZ);
+                                    sprintf(buffer, "ok");
+                                    send_message(buffer, rooms[j]->player1->uid);
+
+                                    sleep(0.5);
+
+                                    send_message(buffer, rooms[j]->player2->uid);
+                                    break;
                                 }
+                                
 
                                 if (rooms[j]->game->playerTurn == rooms[j]->player1->uid)
                                 {
@@ -553,7 +646,7 @@ void *handle_client(void *arg)
                                     sprintf(buffer, "turn1\n");
                                     send_message(buffer, rooms[j]->player2->uid);
                                 }
-
+                                printf("---%d----\n", rooms[j]->game->round);
                                 rooms[j]->game->round++;
                             }
                             break;
@@ -588,6 +681,7 @@ void *handle_client(void *arg)
     queue_remove_client(cli->uid);
     free(cli);
     cli_count--;
+    c--;
     pthread_detach(pthread_self());
 
     return NULL;
@@ -600,7 +694,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    char *ip = "172.26.16.108";
+    char *ip = "127.0.0.1";
     int port = atoi(argv[1]);
 
     int option = 1;
@@ -659,6 +753,7 @@ int main(int argc, char **argv)
 
         // add client to queue
         queue_add_client(cli);
+        c++;
         pthread_create(&tid, NULL, &handle_client, (void*)cli); // moi client 1 luong
 
         // reduce CPU usage

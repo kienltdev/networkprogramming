@@ -28,7 +28,7 @@ pthread_t lobby_thread;
 pthread_t recv_msg_thread;
 pthread_t multiplayer_game;
 
-char *ip = "172.26.16.108";
+char *ip = "127.0.0.1";
 int port = 2050;
 
 void catch_ctrl_c_and_exit()
@@ -52,7 +52,7 @@ void showBoard(char board[3][3], char *errorMessage)
 
     if (*errorMessage != '\x00')
     {
-        printf("Attention: %s!\n\n", errorMessage);
+        printf("Attention:Incorrect move!\n\n");
         *errorMessage = '\x00';
     }
 
@@ -82,7 +82,6 @@ void createBoard(char board[3][3])
         }
     }
 }
-
 
 void menu();
 
@@ -116,7 +115,8 @@ void *multiplayerGame(void *arg)
 
     int receive = recv(sockfd, message, BUFFER_SZ, 0);
 
-    if (receive > 0) {
+    if (receive > 0)
+    {
         setbuf(stdin, 0);
         trim_lf(message, strlen(message));
         sscanf(message, "%s", &playerName2[0]);
@@ -133,8 +133,8 @@ void *multiplayerGame(void *arg)
         {
             if (playerTurn == 1)
             {
-                currentPlayerName = (char *)&playerName1; //neu den luot cua nguoi choi 1 - currentPlayerName sẽ trỏ đến tên của người chơi 1 (player1Name).
-            } 
+                currentPlayerName = (char *)&playerName1; // neu den luot cua nguoi choi 1 - currentPlayerName sẽ trỏ đến tên của người chơi 1 (player1Name).
+            }
             else
             {
                 currentPlayerName = (char *)&playerName2;
@@ -151,7 +151,8 @@ void *multiplayerGame(void *arg)
 
                 int receive = recv(sockfd, message, BUFFER_SZ, 0);
 
-                if (receive > 0) {
+                if (receive > 0)
+                {
                     validPlay = 1;
 
                     setbuf(stdin, 0);
@@ -159,9 +160,25 @@ void *multiplayerGame(void *arg)
 
                     if (strcmp(message, "turn1\n") == 0)
                     {
-                        printf("Enter a position: ");
-                        scanf("%d", &playedPosition);
+                        // printf("Enter a position: ");
+                        // scanf("%d", &playedPosition);
 
+                        do
+                        {
+                            printf("Enter a position (1-9): ");
+                            if (scanf("%d", &playedPosition) != 1)
+                            {
+                                // Người dùng đã nhập một ký tự không phải là số, xử lý lỗi và làm sạch bộ đệm đầu vào
+                                printf("Invalid input. Please enter a number between 1 and 9.\n");
+                                while (getchar() != '\n')
+                                    ; // Làm sạch bộ đệm đầu vào
+                            }
+                            else if (playedPosition < 1 || playedPosition > 9)
+                            {
+                                // Người dùng đã nhập một số không nằm trong khoảng 1-9
+                                printf("Invalid input. Please enter a number between 1 and 9.\n");
+                            }
+                        } while (playedPosition < 1 || playedPosition > 9);
 
                         playedRow = positions[playedPosition - 1][0];
                         playedColumn = positions[playedPosition - 1][1];
@@ -173,7 +190,6 @@ void *multiplayerGame(void *arg)
                             send(sockfd, message, strlen(message), 0);
                             bzero(message, BUFFER_SZ);
                         }
-                        
                     }
                     else if (strcmp(message, "turn2\n") == 0)
                     {
@@ -185,7 +201,8 @@ void *multiplayerGame(void *arg)
                         {
                             int receive = recv(sockfd, message, BUFFER_SZ, 0);
 
-                            if (receive > 0) {
+                            if (receive > 0)
+                            {
                                 sscanf(message, "%i", &numberPlayed);
 
                                 playedRow = positions[numberPlayed - 1][0];
@@ -208,7 +225,7 @@ void *multiplayerGame(void *arg)
             {
                 board[playedRow][playedColumn] = 'X';
                 playerTurn = 2;
-            } 
+            }
             else
             {
                 board[playedRow][playedColumn] = 'O';
@@ -219,13 +236,8 @@ void *multiplayerGame(void *arg)
             {
                 if (
                     (
-                        (board[iterator][0] == board[iterator][1]) && (board[iterator][1] == board[iterator][2]) && board[iterator][0] != '-'
-                    )
-                        ||
-                    (
-                        (board[0][iterator] == board[1][iterator]) && (board[1][iterator] == board[2][iterator]) && board[0][iterator] != '-'
-                    )
-                )
+                        (board[iterator][0] == board[iterator][1]) && (board[iterator][1] == board[iterator][2]) && board[iterator][0] != '-') ||
+                    ((board[0][iterator] == board[1][iterator]) && (board[1][iterator] == board[2][iterator]) && board[0][iterator] != '-'))
                 {
                     gameState = 0;
                 }
@@ -233,13 +245,8 @@ void *multiplayerGame(void *arg)
 
             if (
                 (
-                    (board[0][0] == board[1][1]) && (board[1][1] == board[2][2]) && board[0][0] != '-'
-                )
-                    ||
-                (
-                    (board[0][2] == board[1][1]) && (board[1][1] == board[2][0]) && board[0][2] != '-'
-                )
-            )
+                    (board[0][0] == board[1][1]) && (board[1][1] == board[2][2]) && board[0][0] != '-') ||
+                ((board[0][2] == board[1][1]) && (board[1][1] == board[2][0]) && board[0][2] != '-'))
             {
                 gameState = 0;
             }
@@ -253,12 +260,12 @@ void *multiplayerGame(void *arg)
 
         int receive = recv(sockfd, message, BUFFER_SZ, 0);
 
-        if (receive > 0) {
+        if (receive > 0)
+        {
             setbuf(stdin, 0);
             setbuf(stdout, 0);
 
             showBoard(board, (char *)&errorMessage);
-
 
             if (strcmp(message, "win1\n") == 0)
             {
@@ -267,45 +274,50 @@ void *multiplayerGame(void *arg)
             else if (strcmp(message, "win2\n") == 0)
             {
                 printf("\nPlayer '%s' won!", currentPlayerName);
+            }else if(strcmp(message, "draw\n") == 0){
+                printf("\nThe game is a draw!");
             }
 
             printf("\nGame over!\n");
 
             sleep(6);
 
-            if (pthread_create(&lobby_thread, NULL, &lobby, NULL) != 0) {
+            if (pthread_create(&lobby_thread, NULL, &lobby, NULL) != 0)
+            {
                 printf("ERROR: pthread\n");
                 return NULL;
             }
 
-            if (pthread_create(&recv_msg_thread, NULL, (void*)recv_msg_handler, NULL) != 0) {
+            if (pthread_create(&recv_msg_thread, NULL, (void *)recv_msg_handler, NULL) != 0)
+            {
                 printf("ERROR: pthread\n");
                 return NULL;
             }
 
             pthread_detach(pthread_self());
             pthread_cancel(multiplayer_game);
-
         }
-        
     }
 
     return NULL;
 }
 
-void *lobby(void *arg) // lap de doc du lieu tu ban phim 
+void *lobby(void *arg) // lap de doc du lieu tu ban phim
 {
     char buffer[BUFFER_SZ] = {};
 
-    while(1)
+    while (1)
     {
         str_overwrite_stdout();
         fgets(buffer, BUFFER_SZ, stdin);
         trim_lf(buffer, BUFFER_SZ);
 
-        if (strcmp(buffer, "exit") == 0) {
+        if (strcmp(buffer, "exit") == 0)
+        {
             break;
-        } else {
+        }
+        else
+        {
             send(sockfd, buffer, strlen(buffer), 0);
         }
 
@@ -323,11 +335,12 @@ void recv_msg_handler()
 
     flashScreen();
 
-    while(1)
+    while (1)
     {
         int receive = recv(sockfd, message, BUFFER_SZ, 0);
 
-        if (receive > 0) {
+        if (receive > 0)
+        {
             if (strcmp(message, "ok") == 0)
             {
                 printf("Command:\n");
@@ -342,39 +355,43 @@ void recv_msg_handler()
             else if (strcmp(message, "start game\n") == 0)
             {
                 pthread_cancel(lobby_thread);
-                // pthread_kill(recv_msg_thread, SIGUSR1);   
-                
+                // pthread_kill(recv_msg_thread, SIGUSR1);
+
                 player = 1;
-                if (pthread_create(&multiplayer_game, NULL, (void*)multiplayerGame, NULL) != 0) {
+                if (pthread_create(&multiplayer_game, NULL, (void *)multiplayerGame, NULL) != 0)
+                {
                     printf("ERROR: pthread\n");
                     exit(EXIT_FAILURE);
                 }
                 pthread_detach(pthread_self());
                 pthread_cancel(recv_msg_thread);
 
-                // pthread_kill(lobby_thread, SIGUSR1);   
+                // pthread_kill(lobby_thread, SIGUSR1);
             }
             else if (strcmp(message, "start game2\n") == 0)
             {
                 pthread_cancel(lobby_thread);
-                // pthread_kill(recv_msg_thread, SIGUSR1);   
-                
+                // pthread_kill(recv_msg_thread, SIGUSR1);
+
                 player = 2;
-                if (pthread_create(&multiplayer_game, NULL, (void*)multiplayerGame, NULL) != 0) {
+                if (pthread_create(&multiplayer_game, NULL, (void *)multiplayerGame, NULL) != 0)
+                {
                     printf("ERROR: pthread\n");
                     exit(EXIT_FAILURE);
                 }
                 pthread_detach(pthread_self());
                 pthread_cancel(recv_msg_thread);
 
-                // pthread_kill(lobby_thread, SIGUSR1);   
+                // pthread_kill(lobby_thread, SIGUSR1);
             }
             else
             {
                 printf("%s", message);
                 str_overwrite_stdout();
             }
-        } else if (receive == 0) {
+        }
+        else if (receive == 0)
+        {
             break;
         }
 
@@ -386,15 +403,18 @@ void send_msg_handler()
 {
     char buffer[BUFFER_SZ] = {};
 
-    while(1)
+    while (1)
     {
         str_overwrite_stdout();
         fgets(buffer, BUFFER_SZ, stdin);
         trim_lf(buffer, BUFFER_SZ);
 
-        if (strcmp(buffer, "exit") == 0) {
+        if (strcmp(buffer, "exit") == 0)
+        {
             break;
-        } else {
+        }
+        else
+        {
             send(sockfd, buffer, strlen(buffer), 0);
         }
 
@@ -414,22 +434,24 @@ int conectGame()
 
     // strcpy(name, "murilo");
 
-    if (strlen(name) > NAME_LEN - 1 || strlen(name) < 2) {
+    if (strlen(name) > NAME_LEN - 1 || strlen(name) < 2)
+    {
         printf("Enter name corretly\n");
         return EXIT_FAILURE;
     }
 
     struct sockaddr_in server_addr;
-    
-    //socket settings
+
+    // socket settings
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(ip);
     server_addr.sin_port = htons(port);
 
     // connect to the server
-    int err = connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr));
-    if (err == -1) {
+    int err = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    if (err == -1)
+    {
         printf("ERROR: connect\n");
         return EXIT_FAILURE;
     }
@@ -437,19 +459,58 @@ int conectGame()
     // send the name
     send(sockfd, name, NAME_LEN, 0);
 
-    if (pthread_create(&lobby_thread, NULL, &lobby, NULL) != 0) {
-        printf("ERROR: pthread\n");
-        return EXIT_FAILURE;
-    }
+    // int lua_chon = 0;
+    // char username[50] = "your_username";
+    // char password[50] = "your_password";
+    // do
+    // {
+    //     printf("Menu:\n");
+    //     printf("1. Dang nhap\n");
+    //     printf("2. Dang ky\n");
+    //     printf("Chon mot so tu menu: ");
+    //     scanf("%d", &lua_chon);
 
-    if (pthread_create(&recv_msg_thread, NULL, (void*)recv_msg_handler, NULL) != 0) {
-        printf("ERROR: pthread\n");
-        return EXIT_FAILURE;
-    }
+    //     switch (lua_chon)
+    //     {
+    //     case 1:
 
-    while(1)
+    //         printf("Nhap ten dang nhap: ");
+    //         scanf("%s", username);
+
+    //         printf("Nhap mat khau: ");
+    //         scanf("%s", password);
+
+    //         send(sockfd, username, sizeof(username), 0);
+    //         // send(sockfd, password, sizeof(password), 0);
+    //         // char result_message[100];
+    //         // bzero(result_message, 100);
+    //         // recv(sockfd, result_message, sizeof(result_message), 0);
+    //         // printf("%s\n", result_message);
+    //         break;
+    //     case 2:
+    //         // dang_ky();
+    //         break;
+    //     default:
+    //         printf("Lua chon khong hop le. Vui long chon lai.\n");
+    //     }
+    // } while (lua_chon != 1 && lua_chon != 2);
+
+    if (pthread_create(&lobby_thread, NULL, &lobby, NULL) != 0)
     {
-        if (flag) {
+        printf("ERROR: pthread\n");
+        return EXIT_FAILURE;
+    }
+
+    if (pthread_create(&recv_msg_thread, NULL, (void *)recv_msg_handler, NULL) != 0)
+    {
+        printf("ERROR: pthread\n");
+        return EXIT_FAILURE;
+    }
+
+    while (1)
+    {
+        if (flag)
+        {
             printf("\nBye\n");
             break;
         }
@@ -503,7 +564,7 @@ void game()
             if (playerTurn == 1)
             {
                 currentPlayerName = (char *)&playerName1;
-            } 
+            }
             else
             {
                 currentPlayerName = (char *)&playerName2;
@@ -516,7 +577,8 @@ void game()
             printf("Enter a position: ");
             scanf("%d", &playedPosition);
 
-            if (playedPosition < 1 || playedPosition > 9) {
+            if (playedPosition < 1 || playedPosition > 9)
+            {
                 errorMessage[0] = '\x70';
                 errorMessage[1] = '\x6F';
                 errorMessage[2] = '\x73';
@@ -556,7 +618,7 @@ void game()
             {
                 board[playedRow][playedColumn] = 'X';
                 playerTurn = 2;
-            } 
+            }
             else
             {
                 board[playedRow][playedColumn] = 'O';
@@ -567,13 +629,8 @@ void game()
             {
                 if (
                     (
-                        (board[iterator][0] == board[iterator][1]) && (board[iterator][1] == board[iterator][2]) && board[iterator][0] != '-'
-                    )
-                        ||
-                    (
-                        (board[0][iterator] == board[1][iterator]) && (board[1][iterator] == board[2][iterator]) && board[0][iterator] != '-'
-                    )
-                )
+                        (board[iterator][0] == board[iterator][1]) && (board[iterator][1] == board[iterator][2]) && board[iterator][0] != '-') ||
+                    ((board[0][iterator] == board[1][iterator]) && (board[1][iterator] == board[2][iterator]) && board[0][iterator] != '-'))
                 {
                     gameState = 0;
                 }
@@ -581,13 +638,8 @@ void game()
 
             if (
                 (
-                    (board[0][0] == board[1][1]) && (board[1][1] == board[2][2]) && board[0][0] != '-'
-                )
-                    ||
-                (
-                    (board[0][2] == board[1][1]) && (board[1][1] == board[2][0]) && board[0][2] != '-'
-                )
-            )
+                    (board[0][0] == board[1][1]) && (board[1][1] == board[2][2]) && board[0][0] != '-') ||
+                ((board[0][2] == board[1][1]) && (board[1][1] == board[2][0]) && board[0][2] != '-'))
             {
                 gameState = 0;
             }
@@ -596,8 +648,11 @@ void game()
         }
 
         showBoard(board, (char *)&errorMessage);
-
+        if(round >= 9 && gameState == 1){
+             printf("\nThe game is a draw!"); // game hoa
+        } else{
         printf("\nPlayer '%s' won!", currentPlayerName);
+        }
 
         printf("\nGame over!\n");
         printf("\nDo you want to restart the game?");
@@ -607,15 +662,14 @@ void game()
 
         scanf("%d", &restartOption);
 
-
         switch (restartOption)
         {
-            case 1:
-                gameState = 1;
-                break;
-            case 2:
-                menu();
-                break;
+        case 1:
+            gameState = 1;
+            break;
+        case 2:
+            menu();
+            break;
         }
     }
 }
@@ -641,39 +695,40 @@ void menu()
 
         switch (option)
         {
-            case 1:
-                flashScreen();
-                option = 0;
-                game();
-                break;
-            case 2:
-                flashScreen();
-                option = 0;
-                exit(conectGame());
-                break;
-            case 3:
-                flashScreen();
-                option = 0;
-                printf("About the game!\n");
-                break;
-            case 4:
-                flashScreen();
-                option = 0;
-                printf("You exited!\n");
-                exit(0);
-                break;
-            default:
-                flashScreen();
-                option = 0;
-                printf("Invalid option!\n");
-                continue;
-                break;
+        case 1:
+            flashScreen();
+            option = 0;
+            game();
+            break;
+        case 2:
+            flashScreen();
+            option = 0;
+            exit(conectGame());
+            break;
+        case 3:
+            flashScreen();
+            option = 0;
+            printf("About the game!\n");
+            break;
+        case 4:
+            flashScreen();
+            option = 0;
+            printf("You exited!\n");
+            exit(0);
+            break;
+        default:
+            flashScreen();
+            option = 0;
+            printf("Invalid option!\n");
+            continue;
+            break;
         }
     }
 }
 
 int main(int argc, char **argv)
 {
+
     menu();
 
     return 0;
